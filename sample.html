@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="row"><h1>Hello</h1>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+  <div class="col-md-1">.col-md-1</div>
+</div>
+
+
+  <div id="app">
+	  <v-select :options="options" multiple name="animals[]"></v-select>
+    <!--<v-select :options="options"></v-select>-->
+    <button class="btn btn-success btn-lg" v-on:click="showAlert()">
+          Click to toggle alert on right
+  </button>
+  <button class="btn btn-success btn-lg" v-on:click="showDialog()">
+          Click to toggle modal on right
+  </button>
+<datepicker :value.sync="value" :disabled-days-of-week="disabled" :format="format" :clear-button="clear" :placeholder="placeholder">
+</datepicker>
+    <alert :show.sync="alertIsOpen" placement="top" duration="3000" type="danger" width="400px" dismissable>
+      <span class="icon-ok-circled alert-icon-float-left"></span>
+      <strong>Well Done!{{title}}</strong>
+      <p>You successfully read this important alert message.</p>
+    </alert>
+<modal :show.sync="showCustomModal" effect="fade" width="400">
+  <div slot="modal-header" class="modal-header">
+    <h4 class="modal-title">
+      <i>Custom</i> <code>Modal</code> <b>Title</b>
+    </h4>
+  </div>
+  <div slot="modal-body" class="modal-body">...</div>
+  <div slot="modal-footer" class="modal-footer">
+    <button type="button" class="btn btn-default" @click="showCustomModal = false">Exit</button>
+    <button type="button" class="btn btn-success" @click="showCustomModal = false">Custom Save</button>
+  </div>
+</modal>
+
+  </div>
+
+  <script src="vue.js"></script>
+  <script src="vue-strap.min.js"></script>
+  <script>
+      var vm = new Vue({
+          components: {
+			  vSelect: VueStrap.select,
+              alert: VueStrap.alert,
+			  datepicker: VueStrap.datepicker,
+			  modal: VueStrap.modal,
+          },
+          el: "body",
+          data: {
+			  value:"",
+	          disabled:[],
+	          format:"yyyy-MM-dd",
+	          clear:true,
+	          placeholder:"开始日期",
+              title: "我是标题",
+              alertIsOpen: false,
+              showRight: false,
+              showTop: false,
+			  showCustomModal:false
+          },
+          methods:{
+            showAlert : function(){
+              this.$set('alertIsOpen',true);
+            },
+			showDialog: function(){
+              this.$set('showCustomModal',true);
+            }
+          }
+      })
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>销售关键业务指标曲线图</title>
+    <link href="http://tlgc.oss-cn-shanghai.aliyuncs.com/assert/ui/semantic/semantic.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="tlgc.css">
+    <script src="jquery-1.11.3.min.js"></script>
+    <script src="semantic.min.js"></script>
+    <script src="vue.js"></script>
+    <script src="vue-resource.js"></script>
+    <script type="text/javascript" src="gym.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+
+    <script>
+        var url_jsonp = "https://bbk.800app.com/uploadfile/staticresource/238592/279833/dataInterface_jsonp.aspx";
+        var url_local = "/uploadfile/staticresource/238592/279833/dataInterface_json.aspx";
+        var sql_getGym = "select crmzdy_81744959 city,crmzdy_81744960 area,crm_name name,crmzdy_80620116 code from crm_zdytable_238592_23594_238592_view where crmzdy_80620116>500004 and/*已预售的*/isnull(crmzdy_82011756,'')<>'' and crmzdy_82011756<getdate() ";
+        var sql_get_year ="select min(year(crmzdy_80612375)) dtstart,case when max(year(crmzdy_80646731))>year(getdate()) then year(getdate()) else max(year(crmzdy_80646731)) end dtend from crm_zdytable_238592_23581_238592_view xq where crmzdy_81614271='gymCode'"
+        var sql_quanxian ="selectnbsp;crmzdy_81611236nbsp;gyms,crm_jiandangnbsp;fromnbsp;crm_yh_238592_viewnbsp;wherenbsp;id=iduser";
+
+        var sql_get_data = "declare @gymCode varchar(1000)='gymCodes',@year varchar(1000)='years',@dtStart varchar(10)='ymin'+'-01-01',@dtEnd varchar(10)=case when 'ymax'+'-01-01'>convert(varchar(7),GETDATE(),120)+'-01' then convert(varchar(7),GETDATE(),120)+'-01' else 'ymax'+'-01-01' end;";
+
+        Array.prototype.unique2 = function(){
+            this.sort(); //先排序
+            var res = [this[0]];
+            for(var i = 1; i < this.length; i++){
+                if(this[i] !== res[res.length - 1]){
+                    res.push(this[i]);
+                }
+            }
+            return res;
+        }
+        function max(value) {
+            return Math.max.apply(null,value.split(","));
+        }
+        function min(value) {
+            return Math.min.apply(null,value.split(","));
+        }
+
+       
+    </script>
+
+    <style>
+        .ui .checkbox {
+        //border:  solid red 4px ;
+            margin-right: 20px!important;
+        }
+        .dt-input {
+            cursor: pointer;
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+<div id="box" class="pusher">
+    <div class="ui masthead  segment">
+        <div class="ui container">
+            <h1 style="text-align: center">销售关键业务指标曲线图</h1>
+        </div>
+    </div>
+    <div class="ui container" id="result">
+        <div class="ui segments" >
+            <div class="ui segment" >
+                <div class="ui one column stackable grid">
+                    <div class="column">
+                        <div class="ui tabular menu">
+                            <a class="item" v-for="menu in menuGroup" :class="{active:$index==0}" v-show="menu.status" :data-id="menu.name" v-text="menu.text"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ui segments">
+                <component :is="menu" :select="select" :onlysql="onlysql" :debug=debug>
+                </component>
+
+                <div class="ui segment">
+                    <div style="text-align:center" v-show="isShow" ><img src="loading.gif" width="40px" height="40px"></div>
+                </div>
+                <div class="ui segment" v-show="onlysql.checked" v-html="onlysql.value">
+                </div>
+
+                <div id="map" class="ui segment" data-value="" >
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<template id="home">
+    <div class="ui segment">
+        <div class="ui four column stackable grid">
+            <div class="column">
+            </div>
+            <div class="column right aligned">
+                <div  id="gym1" class="ui fluid search selection dropdown" @change="get_year()">
+                    <input name="gym" type="hidden" v-model="select.gymCodes">
+                    <i class="dropdown icon"></i>
+                    <div class="default text" >请选择中心</div>
+                    <div class="menu">
+                        <div class="item" v-for="gym in filterGymList| orderBy 'name' '-1'" :data-value="gym.code">{{gym.name}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="column left aligned">
+                <div class="ui fluid multiple search selection dropdown">
+                    <input name="year" type="hidden" v-model="select.years">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">选择年份</div>
+                    <div class="menu">
+                        <div class="item" v-for="year in select.yearsAll " :data-value="year.id" v-text="year.name"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="column left aligned">
+                <div class="ui checkbox" v-if="select.acl =='系统管理员'" >
+                    <input type="checkbox" id="sql" v-model="onlysql.checked">
+                    <label for="sql" style="cursor:pointer">仅显示SQL&nbsp;&nbsp;&nbsp;&nbsp;</label>
+                </div>
+                <a href="#" class="ui primary button hidden" @click="get_data()">查询</a>
+            </div>
+        </div>
+    </div>
+    <div class="ui segment">
+        <div class="ui form">
+            <div class="inline fields">
+                <label>请选择需要显示的指标：</label>
+            </div>
+
+            <div class="inline fields">
+                <label>表2：</label>
+                <div class="field" v-for="value in select.values">
+                    <div class="ui checkbox" @change="reload()">
+                        <input name="frequency" type="checkbox" :value="value" :id="value" v-model="select.curValues">
+                        <label :for="value" v-text="value"></label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>
+
+<template id="comp">
+
+	<datepicker :value.sync="value" :disabled-days-of-week="disabled" :format="format" :clear-button="clear" :placeholder="placeholder">
+</datepicker>
+    <button class="btn btn-success btn-lg" v-on:click="showAlert()">
+          Click to toggle alert on right
+  </button>
+  <button class="btn btn-success btn-lg" v-on:click="showDialog()">
+          Click to toggle modal on right
+  </button>
+      <alert :show.sync="alertIsOpen" placement="top" duration="3000" type="danger" width="400px" dismissable>
+      <span class="icon-ok-circled alert-icon-float-left"></span>
+      <strong>Well Done!{{title}}</strong>
+      <p>You successfully read this important alert message.</p>
+    </alert>
+<modal :show.sync="showCustomModal" effect="fade" width="400">
+  <div slot="modal-header" class="modal-header">
+    <h4 class="modal-title">
+      <i>Custom</i> <code>Modal</code> <b>Title</b>
+    </h4>
+  </div>
+  <div slot="modal-body" class="modal-body">...</div>
+  <div slot="modal-footer" class="modal-footer">
+    <button type="button" class="btn btn-default" @click="showCustomModal = false">Exit</button>
+    <button type="button" class="btn btn-success" @click="showCustomModal = false">Custom Save</button>
+  </div>
+</modal>
+</template>
+<script src="vue-strap.min.js"></script> 
+<script>
+    var Home=Vue.extend({
+        template:'#home',
+        props:['select','onlysql','debug'],
+        computed: {
+            filterGymList: function () {
+                var myGym = this.select.userGyms.join(",");
+                var gymList = this.select.gyms;
+                var acl = this.select.acl;
+                return gymList.filter(function (item) {
+                    //console.log(myGym+":"+item.name);
+                    return myGym.indexOf(item.name) != -1 || acl.indexOf("系统管理员") != -1 || acl.indexOf("运营顾问") != -1;
+                });
+            }
+        },
+        methods:{
+            reload:function () {
+                if(this.select.data.length>0) {
+                    this.select.start=true;
+                    this.render();
+                }
+            },
+            test:function () {
+                alert(JSON.stringify(this.select.yearsAll))
+
+            }
+        },
+        ready: function () {
+            $('.ui.dropdown').dropdown();
+            //alert(JSON.stringify(this.select.gymCodes));
+        }
+    });
+    var Comp=Vue.extend({
+        components: {
+			  vSelect: VueStrap.select,
+              alert: VueStrap.alert,
+			  datepicker: VueStrap.datepicker,
+			  modal: VueStrap.modal,
+        },
+        template:'#comp',
+        props:['select','onlysql','debug'],
+        data: function () {
+            return {
+			  value:"",
+	          disabled:[],
+	          format:"yyyy-MM-dd",
+	          clear:true,
+	          placeholder:"开始日期",
+              title: "我是标题",
+              alertIsOpen: false,
+              showRight: false,
+              showTop: false,
+			  showCustomModal:false
+            }
+        },
+        methods:{
+            showAlert : function(){
+              this.$set('alertIsOpen',true);
+            },
+			showDialog: function(){
+              this.$set('showCustomModal',true);
+            }
+        },
+        ready: function () {
+            $('.ui.dropdown').dropdown();
+        }
+    });
+
+  
+    var vm=new Vue({
+        el:'#box',
+        data:{
+            menuGroup:[{status:true,name:"home",text:"年度统计"},{status:false,name:"comp",text:"中心比较"}],
+            menu:"home",
+            onlysql: {checked:false,value:''},
+            select: {
+                start: false,
+                isShow: true,
+                acl: "",
+                userGyms:[],
+                gyms: [],
+                yearsAll: [],
+                years: "",
+                ym:"",
+                month: "",
+                gymCodes: "",
+                curValues: ["本期新增家庭数"],
+                values: ['本期新增家庭数', "从本期咨询中预约体验数", '本期预约体验人次', '本期体验出勤人次'],
+                gymCode: "",
+                data: [],
+            },
+
+        },
+        components:{
+            'home':Home,
+            'comp':Comp 
+        },
+        filters: {
+            discount: function (value, discount) {
+                return value * ( discount / 100 );
+            } 
+        },
+        computed:{
+            reqUrl:function () {
+                if(this.menu=="rank"){
+                    return urlMydata_batch;
+                }else if(this.menu=="area"){
+                    return urlMydata_batch2;
+                }else {
+                    return urlMydata;
+                }
+            },
+            param: function(){
+                    var ym ="";
+                    if(this.select.ym){
+                        ym = "declare @dtlimit varchar(10)='"+this.select.ym+"-08';"
+                    }
+                    return sql_get_data.replace('years',this.select.years)
+                            .replace('gymCodes',this.select.gymCodes)
+                            .replace(/ymin/gi, this.minYear).replace(/ymax/gi,this.maxYear)+ym;
+
+            },
+      
+        },
+        created: function () {
+            this.getGym_jsonp()
+            this.getAcl_jsonp();
+        },
+        methods:{
+            getAcl_jsonp:function(){
+                this.$http.jsonp(url_jsonp,{
+                    sql1:sql_quanxian
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    if(res.data.info[0].rec.constructor !=String){
+                        this.select.acl = res.data.info[0].rec[0].crm_jiandang;
+                        this.select.userGyms=res.data.info[0].rec[0].gyms.split(";");
+                         if(this.select.acl.indexOf("系统管理员")==-1&&this.select.acl.indexOf("运营顾问")==-1){
+                             for(var i=0;i<this.menuGroup.length;i++){
+                                 if(this.select.userGyms.length>1 && this.menuGroup[i].name=="comp"){
+                                     this.menuGroup[i].status=true;
+                                 }
+                             }
+                         }else{
+                             for(var i=0;i<this.menuGroup.length;i++){
+                                     this.menuGroup[i].status=true;
+                             }
+                         }
+ 
+                         //alert(JSON.stringify( this.menuGroup))
+                    }else{
+                        alert("请先登陆OASIS系统！")
+                        window.location.href="https://bbk.800app.com/uploadfile/staticresource/238592/279833/login.html";
+                    }
+                    //alert(this.acl);
+                },function(res){
+                    alert(res.status);
+                });
+            },
+ 
+            getGym_jsonp:function(){
+                this.$http.jsonp(url_jsonp,{
+                    sql1: sql_getGym
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    this.select.gyms = res.data.info[0].rec;
+                },function(res){
+                    alert(res.status);
+                });
+            },
+           
+          
+            debug: function () {
+                //document.write(JSON.stringify(this.select.data));
+                //console.error(JSON.stringify(this.select.data))
+            }
+
+        }
+    });
+
+    $('.ui.dropdown').dropdown();
+    $(".item").click(function () {
+        vm.menu = $(this).data("id");
+        $(".item").removeClass("active");
+        $(this).addClass("active");
+        //$('.ui.dropdown').dropdown();
+    })
+ 
+    $(".btn").click(function () {
+        vm.select.isShow=false;
+        //alert(vm.select.isShow)
+    })
+
+    function isIE() { //ie?
+        if (!!window.ActiveXObject || "ActiveXObject" in window)
+            return true;
+        else
+            return false;
+    }
+   
+ 
+</script>
+</body>
+</html>
