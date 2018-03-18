@@ -1,0 +1,21 @@
+//非json[也是默认转的方法]
+http_build_query()函数使用方法
+http_build_query()函数的作用是使用给出的关联（或下标）数组生成一个经过 URL-encode 的请求字符串。
+
+写法格式：http_build_query ( mixed $query_data [, string $numeric_prefix [, string $arg_separator [, int $enc_type = PHP_QUERY_RFC1738 ]]] )
+
+打个比方：$data = array("name"=>"callback" , "value"=>"test");
+
+$rescult = http_build_query($data);
+
+我们输出下$rescutl可以得到：
+
+name=callback&value=test
+
+
+
+
+
+//json
+$str_json = json_encode($arrParams);
+curl_setopt($con, CURLOPT_HTTPHEADER, array("Content-type: application/json"));

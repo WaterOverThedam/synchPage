@@ -1,0 +1,57 @@
+http://ots.thelittlegym.com.cn:81/addUserModule/api_work/user/1
+http://ots.thelittlegym.com.cn:81/addUserModule/api_work/gym/1
+
+
+https://qyapi.weixin.qq.com/cgi-bin/user/create?access_token=SdBZk0cDux5iefrqpuNsfIoAdhr8ErkKlTHtSOtPProXVfR4hTAEcgl3mgfpqBG6W4uKQTdr_jHFCrx8kyHxePhYRw0__P9S_CW2iWud32Jb3x4j6RD2iEMj4Or22qnh1h9TlNnC1kypsZ_4VEC9QH9__9p9AZhs--7CCckaLGUf6hhY1pBpk6oG1WuzBXI2SBluY9YIh1NqjyFACdAYbw
+
+https://qyapi.weixin.qq.com/cgi-bin/user/simplelist?access_token=SdBZk0cDux5iefrqpuNsfIoAdhr8ErkKlTHtSOtPProXVfR4hTAEcgl3mgfpqBG6W4uKQTdr_jHFCrx8kyHxePhYRw0__P9S_CW2iWud32Jb3x4j6RD2iEMj4Or22qnh1h9TlNnC1kypsZ_4VEC9QH9__9p9AZhs--7CCckaLGUf6hhY1pBpk6oG1WuzBXI2SBluY9YIh1NqjyFACdAYbw&department_id=1&fetch_child=1
+
+
+
+
+
+
+json_decode($json)  -> 对象
+json_decode($json，true)  -> 数组
+实例：
+
+<?php 
+$json = '{"a":1,"b":2,"c":3,"d":4,"e":5}'; 
+var_dump(json_decode($json)); 
+var_dump(json_decode($json, true)); 
+?>
+
+上例将输出：
+
+object(stdClass)#1 (5) { 
+["a"] => int(1) 
+["b"] => int(2) 
+["c"] => int(3) 
+["d"] => int(4) 
+["e"] => int(5) 
+}
+
+array(5) { 
+["a"] => int(1) 
+["b"] => int(2) 
+["c"] => int(3) 
+["d"] => int(4) 
+["e"] => int(5) 
+}
+
+
+$data='[{"Name":"a1","Number":"123","Contno":"000","QQNo":""},{"Name":"a1","Number":"123","Contno":"000","QQNo":""},{"Name":"a1","Number":"123","Contno":"000","QQNo":""}]'; 
+echo json_decode($data);
+
+结果为：
+
+Array ( [0] => stdClass Object ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) [1] => stdClass Object ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) [2] => stdClass Object ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) )
+
+　　可以看出经过json_decode()编译出来的是对象,现在输出json_decode($data,true)试下
+
+ 代码如下	 
+echo json_decode($data,true);
+
+结果：
+
+Array ( [0] => Array ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) [1] => Array ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) [2] => Array ( [Name] => a1 [Number] => 123 [Contno] => 000 [QQNo] => ) )

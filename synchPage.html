@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -6,7 +5,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>销售关键业务指标曲线图</title>
+    <title>企业微信帐号同步管理</title>
     <link href="http://tlgc.oss-cn-shanghai.aliyuncs.com/assert/ui/semantic/semantic.min.css" rel="stylesheet">
     <link rel="stylesheet" href="tlgc.css">
     <script src="jquery-1.11.3.min.js"></script>
@@ -14,17 +13,20 @@
     <script src="vue.js"></script>
     <script src="vue-resource.js"></script>
     <script type="text/javascript" src="gym.js"></script>
-    <link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+    <link href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" rel="stylesheet">
+	<link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+	
 
     <script>
+	    var url_work ="http://ots.thelittlegym.com.cn:81/addUserModule/api_work";
         var url_jsonp = "https://bbk.800app.com/uploadfile/staticresource/238592/279833/dataInterface_jsonp.aspx";
         var url_local = "/uploadfile/staticresource/238592/279833/dataInterface_json.aspx";
-        var sql_getGym = "select crmzdy_81744959 city,crmzdy_81744960 area,crm_name name,crmzdy_80620116 code from crm_zdytable_238592_23594_238592_view where crmzdy_80620116>500004 and/*已预售的*/isnull(crmzdy_82011756,'')<>'' and crmzdy_82011756<getdate() ";
-        var sql_get_year ="select min(year(crmzdy_80612375)) dtstart,case when max(year(crmzdy_80646731))>year(getdate()) then year(getdate()) else max(year(crmzdy_80646731)) end dtend from crm_zdytable_238592_23581_238592_view xq where crmzdy_81614271='gymCode'"
+		//显示在职；离职200天以内
+		var sql_getLs = "select ls.crm_name userid,ls.crmzdy_82010864 alias,crmzdy_82036547 isleader,crmzdy_82010882 gender,case when ls.crmzdy_82004970=1 then 0 else 1 end status,ls.crmzdy_82013079 name,crmzdy_82004999 position,ls.crmzdy_82010859 email,ls.crmzdy_82010861 mobile,case when gym.gymname='' then '' else left(gym.gymname,len(gym.gymname)-1) end gymname,case when gym.gymcode='' then '' else left(gym.gymcode,len(gym.gymcode)-1) end gymcode from crm_zdytable_238592_26853_238592_view ls cross apply(select max(case when xh=1 then name else '' end)+max(case when xh=2 then name else ''  end)+max(case when xh=3 then name else ''  end)+max(case when xh=4 then name else '' end)gymname,max(case when xh=1 then code else ''  end)+max(case when xh=2 then code else '' end)+max(case when xh=3 then code else ''  end)+max(case when xh=4 then code else '' end)gymcode from (select row_number()over(order by gzjl.id)xh,case when gzjl.crmzdy_82010878='' then gym.crm_name+',' else gym.crm_name+'[leave],'  end name,case when gzjl.crmzdy_82010878='' then crmzdy_80620116+',' else '' end code,gzjl.crmzdy_82010875_id from crm_zdytable_238592_26870_238592_view gzjl join crm_zdytable_238592_23594_238592_view gym on gym.id=gzjl.crmzdy_82010876_id and gym.crmzdy_80620116 between '500004' and '600005' and ls.id=gzjl.crmzdy_82010875_id and isnull(nullif(gzjl.crmzdy_82010878,''),getdate())>dateadd(d,-200,getdate()))gym group by crmzdy_82010875_id)gym";	
+        var sql_getGym = "select crmzdy_81744959 city,crmzdy_81744960 area,crm_name name,crmzdy_80620116 code from crm_zdytable_238592_23594_238592_view where crmzdy_80620116 between '500004' and '600005' order by name";
         var sql_quanxian ="selectnbsp;crmzdy_81611236nbsp;gyms,crm_jiandangnbsp;fromnbsp;crm_yh_238592_viewnbsp;wherenbsp;id=iduser";
 
-        var sql_get_data = "declare @gymCode varchar(1000)='gymCodes',@year varchar(1000)='years',@dtStart varchar(10)='ymin'+'-01-01',@dtEnd varchar(10)=case when 'ymax'+'-01-01'>convert(varchar(7),GETDATE(),120)+'-01' then convert(varchar(7),GETDATE(),120)+'-01' else 'ymax'+'-01-01' end;";
-
+   
         Array.prototype.unique2 = function(){
             this.sort(); //先排序
             var res = [this[0]];
@@ -63,7 +65,7 @@
 <div id="box" class="pusher">
     <div class="ui masthead  segment">
         <div class="ui container">
-            <h1 style="text-align: center">销售关键业务指标曲线图</h1>
+            <h1 style="text-align: center">企业微信帐号同步管理</h1>
         </div>
     </div>
     <div class="ui container" id="result">
@@ -82,7 +84,7 @@
                 </component>
 
                 <div class="ui segment">
-                    <div style="text-align:center" v-show="isShow" ><img src="loading.gif" width="40px" height="40px"></div>
+                    <div style="text-align:center" v-show="select.start" ><img src="loading.gif" width="40px" height="40px"></div>
                 </div>
                 <div class="ui segment" v-show="onlysql.checked" v-html="onlysql.value">
                 </div>
@@ -99,45 +101,35 @@
             <div class="column">
             </div>
             <div class="column right aligned">
-                <div  id="gym1" class="ui fluid search selection dropdown" @change="get_year()">
-                    <input name="gym" type="hidden" v-model="select.gymCodes">
-                    <i class="dropdown icon"></i>
-                    <div class="default text" >请选择中心</div>
-                    <div class="menu">
-                        <div class="item" v-for="gym in filterGymList| orderBy 'name' '-1'" :data-value="gym.code">{{gym.name}}</div>
-                    </div>
+                <v-select @selected="getWorkUser()" :value.sync="select.gym_selected" name="gyms[]" options-label="label" placeholder="请选择中心" search clear-button close-on-select>
+                  <v-option v-for="gym of select.gyms" :value="gym.code+'|'+gym.name">{{gym.name}}</v-option>
+                </v-select>
+            </div>
+            <div class="column middle aligned">
+                <div class="ui search">
+                    <a class="ui icon input" id="1">
+                        <input class="prompt" type="text" v-model="search" placeholder="关键字">
+                        <i style="cursor:pointer" class="search icon"></i>
+                    </a>
                 </div>
+                <div class="results"></div>
             </div>
             <div class="column left aligned">
-                <div class="ui fluid multiple search selection dropdown">
-                    <input name="year" type="hidden" v-model="select.years">
-                    <i class="dropdown icon"></i>
-                    <div class="default text">选择年份</div>
-                    <div class="menu">
-                        <div class="item" v-for="year in select.yearsAll " :data-value="year.id" v-text="year.name"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="column left aligned">
-                <div class="ui checkbox" v-if="select.acl =='系统管理员'" >
-                    <input type="checkbox" id="sql" v-model="onlysql.checked">
-                    <label for="sql" style="cursor:pointer">仅显示SQL&nbsp;&nbsp;&nbsp;&nbsp;</label>
-                </div>
-                <a href="#" class="ui primary button hidden" @click="get_data()">查询</a>
+                <a href="javascript:" class="ui primary button" @click="synch()">同步</a>
             </div>
         </div>
     </div>
     <div class="ui segment">
         <div class="ui form">
             <div class="inline fields">
-                <label>请选择需要显示的指标：</label>
+                <label>筛选条件：</label>
             </div>
 
             <div class="inline fields">
-                <label>表2：</label>
-                <div class="field" v-for="value in select.values">
+                <label>入职状态：</label>
+                <div class="field" v-for="value in select.status">
                     <div class="ui checkbox" @change="reload()">
-                        <input name="frequency" type="checkbox" :value="value" :id="value" v-model="select.curValues">
+                        <input name="status" type="checkbox" :value="value" :id="value" v-model="select.status_cur">
                         <label :for="value" v-text="value"></label>
                     </div>
                 </div>
@@ -145,15 +137,81 @@
 
         </div>
     </div>
+    <div class="ui segment" v-if="select.tutors">
+        <table class="ui selectable celled table">
+            <thead>
+            <tr class="positive">
+			    <th>选中</th>
+				<th>帐户名</th>
+                <th>姓名</th>
+                <th>职位</th>
+                <th>手机</th>
+				<th>邮箱</th>
+                <th>所属中心</th>
+				<th>入职状态</th>
+				<th v-show="select.gym_selected">企业微信</th>
+				<th v-show="select.acl=='系统管理员'">删除微信</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="ls in tutorFiltersPage">
+			    <td>
+				  <input name="update" type="checkbox" :value="ls" :id="ls.userid" v-model="select.ids">
+				</td>
+				<td v-text="ls.userid"></td>
+                <td v-text="ls.name"></td>
+                <td v-text="ls.position"></td>
+                <td v-text="ls.mobile"></td>
+                <td v-text="ls.email"></td>
+                <td v-text="ls.gymname"></td>
+				<td v-text="status(ls.status)"></td>
+				<td  v-show="select.gym_selected" v-text="status_work(ls.userid)"></td>
+				<td  v-show="select.acl=='系统管理员'"><a href="javascript:" @click="deleteUser(ls.userid)">删除</a></td>
+            </tr>
+            <tr v-if="select.tutors.length==0 && !select.start">
+                <td colspan="8" style="text-align: center">
+                    <div class="ui pointing red  label">
+                        OOPS! No Record!
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr><th colspan="8">
+                <div class="ui compact menu">
+                    <a class="item">
+                        <i class="icon users"></i> 记录总数
+                        <div class="floating ui red label" v-text="tutorFilters.length"></div>
+                    </a>
+                    <a class="item">
+                        <i class="icon user"></i> 当前记录数
+                        <div class="floating ui teal label" v-text="tutorFiltersPage.length"></div>
+                    </a>
+                </div>
+                <div v-show="!this.select.gym_selected" class="ui right floated pagination menu">
+                    <a href="javascript:void(0)" class="icon pager" v-on:click="turnTo(pageNow-1)"><i class="left chevron icon"></i></a>
+					<a href="javascript:void(0)" v-for="i in navSize" :class="{'disabled':i+pageNow==pageNow}" class="item pager" v-text="i+pageNow" v-on:click="turnTo(i+pageNow)"></a>
+                    <a href="javascript:void(0)" class="icon pager" v-on:click.prevent="turnTo(pageNow+1)"><i class="right chevron icon"></i></a>
+                </div>
+            </th></tr>
+            </tfoot>
+        </table>
+    </div>
+    <alert :show.sync="alertError.show" placement="top" duration="3000" type="danger" width="400px" dismissable>
+      <span class="ion-information-circled alert-icon-float-left"></span>
+      <strong>{{alertError.title}}</strong>
+      <p>{{alertError.text}}</p>
+    </alert>
 </template>
 
-<template id="comp">
+<template id="work">
 
 	<datepicker :value.sync="value" :disabled-days-of-week="disabled" :format="format" :clear-button="clear" :placeholder="placeholder">
 </datepicker>
     <button class="btn btn-success btn-lg" v-on:click="showAlert()">
           Click to toggle alert on right
   </button>
+  <button type="button" class="btn btn-success" @click="alert2 = show">alert2</button>
   <button class="btn btn-success btn-lg" v-on:click="showDialog()">
           Click to toggle modal on right
   </button>
@@ -174,51 +232,226 @@
     <button type="button" class="btn btn-success" @click="showCustomModal = false">Custom Save</button>
   </div>
 </modal>
+<alert :show.sync="true" placement="top-right" duration="3000" type="success" width="400px" dismissable>
+  <span class="icon-ok-circled alert-icon-float-left"></span>
+  <strong>Well Done!</strong>
+  <p>You successfully read this important alert message.</p>
+</alert>
+<alert :show.sync="alert2" placement="top" duration="3000" type="danger" width="400px" dismissable>
+  <span class="icon-info-circled alert-icon-float-left"></span>
+  <strong>Heads up!</strong>
+  <p>This alert needs your attention.</p>
+</alert>
 </template>
 <script src="vue-strap.min.js"></script> 
 <script>
     var Home=Vue.extend({
         template:'#home',
         props:['select','onlysql','debug'],
+		components: {
+			vSelect: VueStrap.select,
+			vOption: VueStrap.option,
+			alert: VueStrap.alert,
+        },
+		data: function () {
+		   return {
+		     text:'',
+		     pageSize :14,
+             pageNow:1,	 
+			 search:"" ,
+			 work_accounts:[],
+			 alertError:{show:false,type:'danger',title:'错误提示',text:'请先选择需要同步的老师'}
+		   }
+		},
         computed: {
-            filterGymList: function () {
-                var myGym = this.select.userGyms.join(",");
-                var gymList = this.select.gyms;
-                var acl = this.select.acl;
-                return gymList.filter(function (item) {
-                    //console.log(myGym+":"+item.name);
-                    return myGym.indexOf(item.name) != -1 || acl.indexOf("系统管理员") != -1 || acl.indexOf("运营顾问") != -1;
-                });
-            }
+		    gym_selected:function(){
+			   var gym_sel = this.select.gym_selected;
+			   if(!this.select.gym_selected) return null
+			   gym_sel = gym_sel.split("|");
+			   return {code:gym_sel[0],name:gym_sel[1]};
+			},
+		    tutorFilters:function(){		
+			      var tutors = this.select.tutors;
+				  var gym_selected;
+				  if(this.select.gym_selected){
+				     gym_selected = this.gym_selected;
+				  }
+				  var search = $.trim(this.search);
+				  var status_cur = JSON.stringify(this.select.status_cur);
+			      var tutorfiltered = tutors.filter(function(tutor){
+				     var context = JSON.stringify(tutor);
+					 var tuto_status = tutor.status==1?'在职':'离职';
+					 //console.log(gym_selected +'VS'+tutor.gymcode);
+			         return (!gym_selected||tutor.gymname.indexOf(gym_selected.name)!=-1)
+					 && (search==""||context.indexOf(search)!=-1)
+					 && status_cur.indexOf(tuto_status)!=-1;
+			      })
+				  this.total = tutorfiltered.length;
+				  return tutorfiltered;
+			 
+			},
+			tutorFiltersPage:function(){
+			   var pageDate=[];
+			   for(var i= this.pageSize*(this.pageNow-1);i<this.tutorFilters.length;i++)
+			   {
+			   		//console.log(i-(this.pageSize*(this.pageNow-1)) +"VS"+this.pageSize-1);
+			     if (i-(this.pageSize*(this.pageNow-1))>this.pageSize-1) break;
+				 pageDate.push(this.tutorFilters[i])
+			   }
+			   return pageDate;
+			},
+            pageNums:function () {
+      			return Math.ceil(this.tutorFilters.length/this.pageSize)
+			},
+			navSize:function () {
+                //console.log(this.users.length)
+                return  this.pageNums>6 ? 6:this.pageNums
+            } 
         },
         methods:{
-            reload:function () {
-                if(this.select.data.length>0) {
-                    this.select.start=true;
-                    this.render();
-                }
-            },
-            test:function () {
-                alert(JSON.stringify(this.select.yearsAll))
+            getLs:function(){
+			    this.select.start=true;
+                this.$http.jsonp(url_jsonp,{
+                    sql1: sql_getLs
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    this.select.tutors = res.data.info[0].rec;
+					this.select.start=false;
+                },function(res){
+                    alert(res.status);
+					this.select.start=false;
+                });
+				
+            }, 
+			saveWorkGym:function(){
+			    var url_synch = url_work+'/gym/put';
+				var gym = this.gym_selected;
+                this.$http.jsonp(url_synch,{
+					name:gym.name,
+					id:gym.code,
+					parentid: 1,
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    console.log(JSON.stringify());
+					if(res.data.errcode>0){
+					   alert(res.data.errmsg)
+					}
+					return res.data;
+					this.select.start=false;
+                },function(res){
+                    alert(res.status);
+					this.select.start=false;
+                }).then(function (res) {
+				     if(!res || !res.status){
+                        console.log('saveUser')
+                        this.saveUser();
+                     }
+                }).then(function (res) {
+                     this.getWorkUser();
+                });
+				
+			},
+			getWorkUser:function(){
+			    var url_synch = url_work+'/user/list';
+				console.log(url_synch)
+				if(!this.gym_selected) return;
+                this.$http.jsonp(url_synch,{
+                    department_id: this.gym_selected.code,
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+				    this.work_accounts = res.data.userlist;
+				    //alert(JSON.stringify(this.work_accounts));
+                },function(res){
+                    alert(res.status);
+					this.select.start=false;
+                });
+			},
+			getUserDetail:function(){
+			    var url_synch = url_work+'/user/get';
+			},
+            saveUser:function(){
+			    var url_synch = url_work+'/user/put';
+                this.$http.jsonp(url_synch,{
+                    users: this.select.ids
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    alert(res.data.errmsg);
+                },function(res){
+                    alert(res.status);
+                });
+            }, 
+            deleteUser:function(userid){
+			    var url_synch = url_work+'/user/delete';
+                this.$http.jsonp(url_synch,{
+                    userid: userid
+                },{
+                    jsonp:'callback'
+                }).then(function(res){
+                    alert(res.data.errmsg);
+                },function(res){
+                    alert(res.status);
+                });
+            }, 
+			turnTo:function(num){
+			  if(num<1) {num=1}
+			  if(num>this.pageNums) {num=this.pageNums}
+			  this.pageNow = num;
+			  //alert(this.pageNow)
 
-            }
+			},
+			synch:function(){
+			  if(this.select.ids==""){
+			     this.alertError.show=true;
+				 return;
+			  }
+	          this.saveWorkGym();
+			},
+            test:function () {
+			 //this.getWorkUser();
+                //alert(JSON.stringify(this.select.status_cur))
+				//alert(JSON.stringify(this.gym_selected))
+
+            },
+			status_work:function(userid){
+			   var accounts = this.work_accounts;
+			   if(!accounts) return '';
+			   var status = '未开通';
+               accounts.forEach(function(value, index, array) {
+                 if(value['userid']==userid){
+                   status = '已开通';
+                 }
+               });
+               return status;
+			},
+			status:function(val){
+			 if (val==1){
+			     return '在职';
+			   }else {
+			     return '离职';
+			  }
+			}
         },
         ready: function () {
-            $('.ui.dropdown').dropdown();
-            //alert(JSON.stringify(this.select.gymCodes));
+			this.getLs();
         }
     });
-    var Comp=Vue.extend({
+    var Work=Vue.extend({
         components: {
 			  vSelect: VueStrap.select,
               alert: VueStrap.alert,
 			  datepicker: VueStrap.datepicker,
 			  modal: VueStrap.modal,
+			  alert: VueStrap.alert,
         },
-        template:'#comp',
+        template:'#work',
         props:['select','onlysql','debug'],
         data: function () {
             return {
+			  alert2:false,
 			  value:"",
 	          disabled:[],
 	          format:"yyyy-MM-dd",
@@ -248,22 +481,25 @@
     var vm=new Vue({
         el:'#box',
         data:{
-            menuGroup:[{status:true,name:"home",text:"年度统计"},{status:false,name:"comp",text:"中心比较"}],
+            menuGroup:[{status:true,name:"home",text:"OASIS帐号"},{status:false,name:"work",text:"企业微信帐号"}],
             menu:"home",
             onlysql: {checked:false,value:''},
             select: {
                 start: false,
                 isShow: true,
                 acl: "",
-                userGyms:[],
+				access_token:"",
+                tutors:[],
+				ids:[],
                 gyms: [],
+				gym_selected:null,
                 yearsAll: [],
                 years: "",
-                ym:"",
+                ym: "",
                 month: "",
                 gymCodes: "",
-                curValues: ["本期新增家庭数"],
-                values: ['本期新增家庭数', "从本期咨询中预约体验数", '本期预约体验人次', '本期体验出勤人次'],
+                status_cur: ['在职','离职'],
+                status: ['在职','离职'],
                 gymCode: "",
                 data: [],
             },
@@ -271,7 +507,7 @@
         },
         components:{
             'home':Home,
-            'comp':Comp 
+            'work':Work 
         },
         filters: {
             discount: function (value, discount) {
@@ -301,7 +537,7 @@
       
         },
         created: function () {
-            this.getGym_jsonp()
+            this.getGym_jsonp();
             this.getAcl_jsonp();
         },
         methods:{
@@ -336,7 +572,6 @@
                     alert(res.status);
                 });
             },
- 
             getGym_jsonp:function(){
                 this.$http.jsonp(url_jsonp,{
                     sql1: sql_getGym
@@ -348,17 +583,32 @@
                     alert(res.status);
                 });
             },
-           
+			getToken:function(){
+			   var url = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?";
+			   var param = {corpid:"ww0b034a3590df21fc",corpsecret:"VrJ8K60RQbT1HZQu_5j6SL2xBC7PDLUPw4vcseFeuoc"};
+			   url += $.param(param);
+			   //alert(url)
+               this.$http.jsonp(url_work,{
+			     url:url
+               },{
+                   jsonp:'callback'
+               }).then(function(res){
+			       
+                   this.select.access_token=res.data.info[0].res.access_token;
+				   //alert(this.select.access_token)
+               },function(res){
+				   alert(JSON.stringify(res))
+                   alert(res.status);
+               });
+            },
           
             debug: function () {
-                //document.write(JSON.stringify(this.select.data));
-                //console.error(JSON.stringify(this.select.data))
+	 
             }
 
         }
     });
 
-    $('.ui.dropdown').dropdown();
     $(".item").click(function () {
         vm.menu = $(this).data("id");
         $(".item").removeClass("active");

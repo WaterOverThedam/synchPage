@@ -1,0 +1,35 @@
+http_build_query
+PHP http_build_query()函数用于构造URL字符串。 例如：
+
+<?php
+$data = array('a'=>'foo', 'b'=>'bar 2');
+
+$a = http_build_query($data);
+echo "http://www.aaa.com/index.php?".$a;
+?> 
+运行结果为：
+
+http://www.aaa.com/index.php?a=foo&b=bar+2
+从上面实例可以看出，http_build_query()就是将一个数组转换成url问号?后面的参数字符串，并且会自动进行urlencode处理。
+
+ 
+
+parse_str
+php parse_str将网站链接的查询字符串（query string）解析为变量并设置到当前作用域。请看下面实例：
+
+<?php
+$str = "db=mysql&pro[]=java+tutorial&pro[]=php+tutorial";
+
+//不使用第二个参数：
+parse_str($str);
+echo $db."<br/>";
+echo $pro[0]."<br/>";
+echo $pro[1]."<br/>";
+
+//使用第二个参数
+parse_str($str, $parameter);
+echo $parameter['db']."<br/>"; 
+echo $parameter['pro'][0]."<br/>";
+echo $parameter['pro'][1]."<br/>";
+
+?> 
