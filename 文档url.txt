@@ -1,0 +1,19 @@
+//hightCharts 
+https://www.hcharts.cn/demo/highmaps/color-axis
+https://api.hcharts.cn/highmaps#series<map>.data.events
+
+
+        <success>boolean</success>
+        <ID>int</ID>
+        <a>string</a>
+        <errors>
+          <Errors>
+            <StatusCode>int</StatusCode>
+            <message>string</message>
+          </Errors>
+          <Errors>
+            <StatusCode>int</StatusCode>
+            <message>string</message>
+          </Errors>
+        </errors>
+

@@ -4,6 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="description" content="使用vue-strap;source:http://yuche.github.io/vue-strap/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>企业微信帐号同步管理</title>
     <link href="http://tlgc.oss-cn-shanghai.aliyuncs.com/assert/ui/semantic/semantic.min.css" rel="stylesheet">
@@ -197,15 +198,22 @@
             </tfoot>
         </table>
     </div>
-    <alert :show.sync="alertError.show" placement="top" duration="3000" type="danger" width="400px" dismissable>
+    <alert :show.sync="alertError.show" placement="top" duration="4000" type="danger" width="400px" dismissable>
       <span class="ion-information-circled alert-icon-float-left"></span>
       <strong>{{alertError.title}}</strong>
-      <p>{{alertError.text}}</p>
+      <p v-html="alertError.msg"></p>
+    </alert>
+    <alert :show.sync="alertInfo.show" placement="top" duration="0" type="info" width="400px" dismissable>
+      <span class="ion-information-circled alert-icon-float-left"></span>
+      <strong>{{alertInfo.title}}</strong>
+      <p v-html="alertInfo.msg"></p>
     </alert>
 </template>
 
 <template id="work">
-
+<tooltip trigger="hover" effect="scale" placement="bottom" content="Lorem ipsum dolor sit amet consectetur adipisicing elit, sed do eiusmod">
+  <button class="btn btn-default">tooltip on bottom</button>
+</tooltip>
 	<datepicker :value.sync="value" :disabled-days-of-week="disabled" :format="format" :clear-button="clear" :placeholder="placeholder">
 </datepicker>
     <button class="btn btn-success btn-lg" v-on:click="showAlert()">
@@ -260,7 +268,8 @@
              pageNow:1,	 
 			 search:"" ,
 			 work_accounts:[],
-			 alertError:{show:false,type:'danger',title:'错误提示',text:'请先选择需要同步的老师'}
+			 alertError:{show:false,title:'错误提示',msg:'请先选择需要同步的老师'},
+			 alertInfo:{show:false,title:'同步结果如下：',msg:''}
 		   }
 		},
         computed: {
@@ -324,9 +333,18 @@
                 });
 				
             }, 
+			result:function(arr){
+			   var msg="";
+			   arr.map(function(a){
+			      msg+="<p>"+a.name+" "+a.errmsg+"</p>";
+			   })
+			   this.alertInfo.msg=msg;
+			   this.alertInfo.show=true;
+			},
 			saveWorkGym:function(){
 			    var url_synch = url_work+'/gym/put';
-				var gym = this.gym_selected;
+				var gym = this.gym_selected||{name:"",code:""};
+				//alert(JSON.stringify(gym))
                 this.$http.jsonp(url_synch,{
 					name:gym.name,
 					id:gym.code,
@@ -334,12 +352,7 @@
                 },{
                     jsonp:'callback'
                 }).then(function(res){
-                    console.log(JSON.stringify());
-					if(res.data.errcode>0){
-					   alert(res.data.errmsg)
-					}
-					return res.data;
-					this.select.start=false;
+					 this.result(res.data)
                 },function(res){
                     alert(res.status);
 					this.select.start=false;
@@ -355,7 +368,8 @@
 			},
 			getWorkUser:function(){
 			    var url_synch = url_work+'/user/list';
-				console.log(url_synch)
+				//console.log(url_synch)
+				//alert(this.gym_selected);
 				if(!this.gym_selected) return;
                 this.$http.jsonp(url_synch,{
                     department_id: this.gym_selected.code,
@@ -373,13 +387,16 @@
 			    var url_synch = url_work+'/user/get';
 			},
             saveUser:function(){
+			    if(this.select.ids==""){
+				 return;
+			   }
 			    var url_synch = url_work+'/user/put';
                 this.$http.jsonp(url_synch,{
                     users: this.select.ids
                 },{
                     jsonp:'callback'
                 }).then(function(res){
-                    alert(res.data.errmsg);
+                    this.result(res.data);
                 },function(res){
                     alert(res.status);
                 });
@@ -404,7 +421,7 @@
 
 			},
 			synch:function(){
-			  if(this.select.ids==""){
+			  if(this.select.ids=="" && this.gym_selected){
 			     this.alertError.show=true;
 				 return;
 			  }
@@ -446,6 +463,7 @@
 			  datepicker: VueStrap.datepicker,
 			  modal: VueStrap.modal,
 			  alert: VueStrap.alert,
+			  tooltip: VueStrap.tooltip
         },
         template:'#work',
         props:['select','onlysql','debug'],
@@ -481,7 +499,7 @@
     var vm=new Vue({
         el:'#box',
         data:{
-            menuGroup:[{status:true,name:"home",text:"OASIS帐号"},{status:false,name:"work",text:"企业微信帐号"}],
+            menuGroup:[{status:true,name:"home",text:"OASIS帐号信息及企业微信同步"},{status:false,name:"work",text:"企业微信帐号"}],
             menu:"home",
             onlysql: {checked:false,value:''},
             select: {
@@ -552,7 +570,7 @@
                         this.select.userGyms=res.data.info[0].rec[0].gyms.split(";");
                          if(this.select.acl.indexOf("系统管理员")==-1&&this.select.acl.indexOf("运营顾问")==-1){
                              for(var i=0;i<this.menuGroup.length;i++){
-                                 if(this.select.userGyms.length>1 && this.menuGroup[i].name=="comp"){
+                                 if(this.select.userGyms.length>1 && this.menuGroup[i].name=="home"){
                                      this.menuGroup[i].status=true;
                                  }
                              }
