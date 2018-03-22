@@ -18,7 +18,7 @@ pre {
 .container{
     width: 55%;
 }
-.checkbox{
+.checkbox lable{
     cursor: pointer;
 }
 

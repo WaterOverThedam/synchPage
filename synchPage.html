@@ -151,6 +151,7 @@
                 <th>所属中心</th>
 				<th>入职状态</th>
 				<th v-show="select.gym_selected">企业微信</th>
+				<th v-show="select.gym_selected">微信部门</th>
 				<th v-show="select.acl=='系统管理员'">删除微信</th>
             </tr>
             </thead>
@@ -166,11 +167,12 @@
                 <td v-text="ls.email"></td>
                 <td v-text="ls.gymname"></td>
 				<td v-text="status(ls.status)"></td>
-				<td  v-show="select.gym_selected" v-text="status_work(ls.userid)"></td>
-				<td  v-show="select.acl=='系统管理员'"><a href="javascript:" @click="deleteUser(ls.userid)">删除</a></td>
+				<td v-show="select.gym_selected" v-text="status_work(ls.userid).status"></td>
+				<td v-show="select.gym_selected" v-text="status_work(ls.userid).dpt"></td>
+				<td v-show="select.acl=='系统管理员'"><a href="javascript:" @click="deleteUser(ls.userid)">删除</a></td>
             </tr>
             <tr v-if="select.tutors.length==0 && !select.start">
-                <td colspan="8" style="text-align: center">
+                <td colspan="9" style="text-align: center">
                     <div class="ui pointing red  label">
                         OOPS! No Record!
                     </div>
@@ -178,7 +180,7 @@
             </tr>
             </tbody>
             <tfoot>
-            <tr><th colspan="8">
+            <tr><th colspan="9">
                 <div class="ui compact menu">
                     <a class="item">
                         <i class="icon users"></i> 记录总数
@@ -341,6 +343,25 @@
 			   this.alertInfo.msg=msg;
 			   this.alertInfo.show=true;
 			},
+			getGymName:function(arrCode){
+			   var gyms = this.select.gyms;
+			   var gymName =""
+			   arrCode.forEach(function(code){
+			     for(let i in gyms) {  
+                   if(gyms[i].code ==code){
+			  	      gymName += ","+gyms[i].name;
+			  	      break;
+			  	   }
+                 };  
+			     if(code==4){
+			          gymName += ",中心负责人";
+			     }
+			   })
+			   if(gymName!=""){
+				     gymName = gymName.substr(1);
+			   }
+			   return gymName;
+			},
 			saveWorkGym:function(){
 			    var url_synch = url_work+'/gym/put';
 				var gym = this.gym_selected||{name:"",code:""};
@@ -367,6 +388,7 @@
 				
 			},
 			getWorkUser:function(){
+			    this.select.ids=[];
 			    var url_synch = url_work+'/user/list';
 				//console.log(url_synch)
 				//alert(this.gym_selected);
@@ -434,15 +456,19 @@
 
             },
 			status_work:function(userid){
+			   var vm =this;
 			   var accounts = this.work_accounts;
 			   if(!accounts) return '';
 			   var status = '未开通';
+			   var department="";
                accounts.forEach(function(value, index, array) {
                  if(value['userid']==userid){
                    status = '已开通';
+				   department = vm.getGymName(value["department"]);
                  }
                });
-               return status;
+			   
+               return {status:status,dpt:department};
 			},
 			status:function(val){
 			 if (val==1){
